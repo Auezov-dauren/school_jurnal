@@ -1,1 +1,268 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Электронный журнал посещаемости</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background: #f4f6f9; color: #333; }
+    h1, h2, h3 { color: #2c3e50; }
+    .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    .table-container { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #fff; }
+    th, td { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: center; white-space: nowrap; }
+    th { background-color: #1e293b; color: white; font-weight: 600; }
+    .student-name { text-align: left; font-weight: 500; }
+    .me-row { background-color: #e0f2fe !important; font-weight: bold; }
+    .me-row td { color: #0369a1; }
+    button { cursor: pointer; padding: 8px 14px; border: none; border-radius: 6px; background: #2563eb; color: white; font-weight: 500; transition: 0.2s; }
+    button:hover { background: #1d4ed8; }
+    input, select { padding: 7px 10px; margin: 5px 0; border: 1px solid #cbd5e1; border-radius: 6px; }
+    .flex-gap { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .nav-tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+    .nav-tabs button { background: #64748b; }
+    .nav-tabs button.active { background: #0f172a; }
+  </style>
+</head>
+<body>
 
+  <div class="nav-tabs">
+    <button id="tabJournalBtn" class="active" onclick="showTab('journal')">📖 Журнал посещаемости</button>
+    <button id="tabAdminBtn" onclick="showTab('admin')">⚙️ Админ-панель</button>
+  </div>
+
+  <!-- Вкладка: Журнал -->
+  <div id="journalSection" class="card">
+    <h2>Журнал посещаемости</h2>
+    <div class="flex-gap" style="margin-bottom: 15px;">
+      <input type="text" id="newDateInput" placeholder="Введите дату (напр. 22.10.2026)">
+      <button onclick="addDateColumn()">+ Добавить дату</button>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr id="headerRow">
+            <th>№</th>
+            <th style="text-align: left;">Ф.И.О. обучающегося</th>
+          </tr>
+        </thead>
+        <tbody id="studentRows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Вкладка: Админ-панель -->
+  <div id="adminSection" class="card" style="display: none;">
+    <h2>Управление пользователями и ролями</h2>
+    
+    <h3>Создать / Обновить пользователя</h3>
+    <div style="max-width: 320px; display: flex; flex-direction: column;">
+      <label>Логин:</label>
+      <input type="text" id="usernameInput" placeholder="Логин">
+      
+      <label>Пароль:</label>
+      <input type="password" id="passwordInput" placeholder="Пароль">
+      
+      <label>Роль / Ранг:</label>
+      <select id="roleSelect">
+        <option value="Староста">Староста</option>
+        <option value="Зам. старосты">Зам. старосты</option>
+        <option value="Кл. руководитель">Классный руководитель</option>
+      </select>
+      
+      <button onclick="addUser()" style="margin-top: 10px; background: #9333ea;">Сохранить аккаунт</button>
+    </div>
+
+    <h3 style="margin-top: 30px;">Список пользователей</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Логин</th>
+            <th>Пароль</th>
+            <th>Ранг (Роль)</th>
+            <th>Действие</th>
+          </tr>
+        </thead>
+        <tbody id="usersListTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Подключаем Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    // Конфигурация Firebase из вашей панели
+    const firebaseConfig = {
+      apiKey: "AIzaSyATo6pLiD6UvdAYtV7CPQYmpdqiaX-udew",
+      authDomain: "schooljurnal-209a4.firebaseapp.com",
+      projectId: "schooljurnal-209a4",
+      storageBucket: "schooljurnal-209a4.firebasestorage.app",
+      messagingSenderId: "819006496621",
+      appId: "1:819006496621:web:ef7d0bdf8cc2534868464",
+      measurementId: "G-K62BCK991H"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const initialStudents = [
+      "Абай Адель Саяновна", "Аип Ильяс Манатұлы", "Веселова Екатерина Андреевна",
+      "Егизбаева Мерей Канатовна", "Жұмағали Айару Куатқызы", "Жексенбаева Айзере Саятовна",
+      "Идрисова Адия Данияровна", "Калгаев Курмет Куатович", "Куандыков Тамерлан Ержанович",
+      "Куттубаева Томирис Азаматовна", "Қалқамбек Арлан Диазұлы", "Я",
+      "Мұрат Қорлан Саматқызы", "Мұратбек Самир Бауржанұлы", "Мырзабек Іңкәр Нұрланқызы",
+      "Оразалина Рузанна Адильбековна", "Паниченко Александра Виталевна", "Плетнева Виктория Евгеньевна",
+      "Садыкова Риана Рустамовна", "Сағит Жәңгір Дәуренұлы", "Сатыбалды Альтаир Әсетұлы",
+      "Смакова Айлина Дамировна", "Ткаченко Анастасия Андреевна", "Тлевлес Тахмина Аяновна",
+      "Уантаева Дарина Ернуровна", "Урумбаева Айлин Асановна", "Эйрих Юлиана Дмитриевна",
+      "Яровой Илья Константинович", "Чапай Батырхан Ержанұлы"
+    ];
+
+    let students = initialStudents.map((name, index) => ({ id: index + 1, name }));
+    let dates = ["22.10.2026"];
+    let attendanceData = {};
+    let users = [
+      { login: "admin", pass: "1234", role: "Кл. руководитель" },
+      { login: "starosta", pass: "1234", role: "Староста" }
+    ];
+
+    // Синхронизация данных с Firebase в реальном времени
+    onValue(ref(db, 'journal'), (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        if (data.dates) dates = data.dates;
+        if (data.attendanceData) attendanceData = data.attendanceData;
+        if (data.users) users = data.users;
+      } else {
+        saveToFirebase(); // Первое сохранение по умолчанию
+      }
+      renderTable();
+      renderUsers();
+    });
+
+    window.saveToFirebase = function() {
+      set(ref(db, 'journal'), {
+        dates: dates,
+        attendanceData: attendanceData,
+        users: users
+      }).then(() => {
+        alert("Изменения сохранены в защищенную базу данных!");
+      }).catch((error) => {
+        alert("Ошибка сохранения: " + error.message);
+      });
+    }
+
+    window.renderTable = function() {
+      const headerRow = document.getElementById("headerRow");
+      headerRow.innerHTML = '<th>№</th><th style="text-align: left;">Ф.И.О. обучающегося</th>';
+      
+      dates.forEach(date => {
+        const th = document.createElement("th");
+        th.textContent = date;
+        headerRow.appendChild(th);
+      });
+
+      const tbody = document.getElementById("studentRows");
+      tbody.innerHTML = "";
+
+      students.forEach((student) => {
+        const tr = document.createElement("tr");
+        if (student.name === "Я") tr.classList.add("me-row");
+
+        tr.innerHTML = `<td>${student.id}</td><td class="student-name">${student.name}</td>`;
+
+        dates.forEach(date => {
+          const td = document.createElement("td");
+          const currentValue = (attendanceData[date] && attendanceData[date][student.id]) || "";
+          
+          td.innerHTML = `
+            <select onchange="updateAttendance('${date}', ${student.id}, this.value)">
+              <option value="" ${currentValue === '' ? 'selected' : ''}>—</option>
+              <option value="П" ${currentValue === 'П' ? 'selected' : ''}>П (Был)</option>
+              <option value="Н" ${currentValue === 'Н' ? 'selected' : ''}>Н (Н/Б)</option>
+              <option value="Б" ${currentValue === 'Б' ? 'selected' : ''}>Б (Болен)</option>
+            </select>
+          `;
+          tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    window.addDateColumn = function() {
+      const dateInput = document.getElementById("newDateInput");
+      const newDate = dateInput.value.trim();
+      if (!newDate) return alert("Введите дату!");
+      
+      if (!dates.includes(newDate)) {
+        dates.push(newDate);
+        if (!attendanceData[newDate]) attendanceData[newDate] = {};
+        saveToFirebase();
+        dateInput.value = "";
+      } else {
+        alert("Такая дата уже добавлена!");
+      }
+    }
+
+    window.updateAttendance = function(date, studentId, value) {
+      if (!attendanceData[date]) attendanceData[date] = {};
+      attendanceData[date][studentId] = value;
+      saveToFirebase();
+    }
+
+    window.showTab = function(tab) {
+      document.getElementById("journalSection").style.display = tab === 'journal' ? 'block' : 'none';
+      document.getElementById("adminSection").style.display = tab === 'admin' ? 'block' : 'none';
+      
+      document.getElementById("tabJournalBtn").classList.toggle("active", tab === 'journal');
+      document.getElementById("tabAdminBtn").classList.toggle("active", tab === 'admin');
+    }
+
+    window.addUser = function() {
+      const login = document.getElementById("usernameInput").value.trim();
+      const pass = document.getElementById("passwordInput").value.trim();
+      const role = document.getElementById("roleSelect").value;
+      
+      if (!login || !pass) return alert("Заполните логин и пароль");
+      
+      const existingUser = users.find(u => u.login === login);
+      if (existingUser) {
+        existingUser.pass = pass;
+        existingUser.role = role;
+      } else {
+        users.push({ login, pass, role });
+      }
+      
+      saveToFirebase();
+      document.getElementById("usernameInput").value = "";
+      document.getElementById("passwordInput").value = "";
+    }
+
+    window.renderUsers = function() {
+      const tbody = document.getElementById("usersListTable");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      users.forEach(u => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${u.login}</td>
+            <td>${u.pass}</td>
+            <td><b>${u.role}</b></td>
+            <td><button onclick="removeUser('${u.login}')" style="background:#ef4444; padding: 4px 8px;">Удалить</button></td>
+          </tr>
+        `;
+      });
+    }
+
+    window.removeUser = function(login) {
+      users = users.filter(u => u.login !== login);
+      saveToFirebase();
+    }
+  </script>
+</body>
+</html>
