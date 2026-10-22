@@ -26,76 +26,89 @@
 </head>
 <body>
 
-  <div class="nav-tabs">
-    <button id="tabJournalBtn" class="active" onclick="showTab('journal')">📖 Журнал посещаемости</button>
-    <button id="tabAdminBtn" onclick="showTab('admin')">⚙️ Админ-панель</button>
-  </div>
-
-  <!-- Вкладка: Журнал -->
-  <div id="journalSection" class="card">
-    <h2>Журнал посещаемости</h2>
-    <div class="flex-gap" style="margin-bottom: 15px;">
-      <input type="text" id="newDateInput" placeholder="Введите дату (напр. 22.10.2026)">
-      <button onclick="addDateColumn()">+ Добавить дату</button>
-    </div>
-
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr id="headerRow">
-            <th>№</th>
-            <th style="text-align: left;">Ф.И.О. обучающегося</th>
-          </tr>
-        </thead>
-        <tbody id="studentRows"></tbody>
-      </table>
+  <!-- Экран входа -->
+  <div id="authScreen" class="card" style="max-width: 400px; margin: 100px auto; text-align: center;">
+    <h2>🔐 Вход в журнал</h2>
+    <p style="color: #64748b;">Данные загружаются из базы данных</p>
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+      <input type="text" id="loginInput" placeholder="Логин">
+      <input type="password" id="passInput" placeholder="Пароль">
+      <button onclick="tryLogin()" style="background: #2563eb; margin-top: 10px;">Войти</button>
+      <button onclick="initFirstAdmin()" style="background: #16a34a; font-size: 13px; margin-top: 5px;">⚠️ Создать первого админа (если база пуста)</button>
     </div>
   </div>
 
-  <!-- Вкладка: Админ-панель -->
-  <div id="adminSection" class="card" style="display: none;">
-    <h2>Управление пользователями и ролями</h2>
-    
-    <h3>Создать / Обновить пользователя</h3>
-    <div style="max-width: 320px; display: flex; flex-direction: column;">
-      <label>Логин:</label>
-      <input type="text" id="usernameInput" placeholder="Логин">
-      
-      <label>Пароль:</label>
-      <input type="password" id="passwordInput" placeholder="Пароль">
-      
-      <label>Роль / Ранг:</label>
-      <select id="roleSelect">
-        <option value="Староста">Староста</option>
-        <option value="Зам. старосты">Зам. старосты</option>
-        <option value="Кл. руководитель">Классный руководитель</option>
-      </select>
-      
-      <button onclick="addUser()" style="margin-top: 10px; background: #9333ea;">Сохранить аккаунт</button>
+  <!-- Основной контент -->
+  <div id="appContent" style="display: none;">
+    <div class="nav-tabs">
+      <button id="tabJournalBtn" class="active" onclick="showTab('journal')">📖 Журнал посещаемости</button>
+      <button id="tabAdminBtn" onclick="showTab('admin')" style="display: none;">⚙️ Админ-панель</button>
+      <button onclick="logout()" style="background: #ef4444; margin-left: auto;">Выйти</button>
     </div>
 
-    <h3 style="margin-top: 30px;">Список пользователей</h3>
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>Логин</th>
-            <th>Пароль</th>
-            <th>Ранг (Роль)</th>
-            <th>Действие</th>
-          </tr>
-        </thead>
-        <tbody id="usersListTable"></tbody>
-      </table>
+    <!-- Вкладка: Журнал -->
+    <div id="journalSection" class="card">
+      <h2>Журнал посещаемости</h2>
+      <div class="flex-gap" style="margin-bottom: 15px;">
+        <input type="text" id="newDateInput" placeholder="Введите дату (напр. 22.10.2026)">
+        <button onclick="addDateColumn()">+ Добавить дату</button>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr id="headerRow">
+              <th>№</th>
+              <th style="text-align: left;">Ф.И.О. обучающегося</th>
+            </tr>
+          </thead>
+          <tbody id="studentRows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Вкладка: Админ-панель -->
+    <div id="adminSection" class="card" style="display: none;">
+      <h2>Управление пользователями и учениками</h2>
+      
+      <h3>Добавить ученика</h3>
+      <div style="max-width: 320px; display: flex; flex-direction: column; margin-bottom: 20px;">
+        <input type="text" id="newStudentName" placeholder="ФИО ученика (или «Я»)">
+        <button onclick="addStudent()" style="background: #2563eb; margin-top: 5px;">Добавить ученика</button>
+      </div>
+
+      <h3>Создать / Обновить пользователя</h3>
+      <div style="max-width: 320px; display: flex; flex-direction: column;">
+        <input type="text" id="usernameInput" placeholder="Логин">
+        <input type="password" id="passwordInput" placeholder="Пароль">
+        <select id="roleSelect">
+          <option value="Староста">Староста</option>
+          <option value="Зам. старосты">Зам. старосты</option>
+          <option value="Кл. руководитель">Классный руководитель</option>
+        </select>
+        <button onclick="addUser()" style="margin-top: 10px; background: #9333ea;">Сохранить аккаунт</button>
+      </div>
+
+      <h3 style="margin-top: 30px;">Список пользователей</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Логин</th>
+              <th>Ранг (Роль)</th>
+              <th>Действие</th>
+            </tr>
+          </thead>
+          <tbody id="usersListTable"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
-  <!-- Подключаем Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    // Конфигурация Firebase из вашей панели
     const firebaseConfig = {
       apiKey: "AIzaSyATo6pLiD6UvdAYtV7CPQYmpdqiaX-udew",
       authDomain: "schooljurnal-209a4.firebaseapp.com",
@@ -109,55 +122,77 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    const initialStudents = [
-      "Абай Адель Саяновна", "Аип Ильяс Манатұлы", "Веселова Екатерина Андреевна",
-      "Егизбаева Мерей Канатовна", "Жұмағали Айару Куатқызы", "Жексенбаева Айзере Саятовна",
-      "Идрисова Адия Данияровна", "Калгаев Курмет Куатович", "Куандыков Тамерлан Ержанович",
-      "Куттубаева Томирис Азаматовна", "Қалқамбек Арлан Диазұлы", "Я",
-      "Мұрат Қорлан Саматқызы", "Мұратбек Самир Бауржанұлы", "Мырзабек Іңкәр Нұрланқызы",
-      "Оразалина Рузанна Адильбековна", "Паниченко Александра Виталевна", "Плетнева Виктория Евгеньевна",
-      "Садыкова Риана Рустамовна", "Сағит Жәңгір Дәуренұлы", "Сатыбалды Альтаир Әсетұлы",
-      "Смакова Айлина Дамировна", "Ткаченко Анастасия Андреевна", "Тлевлес Тахмина Аяновна",
-      "Уантаева Дарина Ернуровна", "Урумбаева Айлин Асановна", "Эйрих Юлиана Дмитриевна",
-      "Яровой Илья Константинович", "Чапай Батырхан Ержанұлы"
-    ];
-
-    let students = initialStudents.map((name, index) => ({ id: index + 1, name }));
-    let dates = ["22.10.2026"];
+    let students = [];
+    let dates = [];
     let attendanceData = {};
-    let users = [
-      { login: "admin", pass: "1234", role: "Кл. руководитель" },
-      { login: "starosta", pass: "1234", role: "Староста" }
-    ];
+    let users = [];
+    let currentUser = null;
 
-    // Синхронизация данных с Firebase в реальном времени
+    // Читаем всё исключительно из Firebase в реальном времени
     onValue(ref(db, 'journal'), (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        if (data.dates) dates = data.dates;
-        if (data.attendanceData) attendanceData = data.attendanceData;
-        if (data.users) users = data.users;
-      } else {
-        saveToFirebase(); // Первое сохранение по умолчанию
+        students = data.students || [];
+        dates = data.dates || [];
+        attendanceData = data.attendanceData || {};
+        users = data.users || [];
       }
-      renderTable();
-      renderUsers();
+      if (currentUser) {
+        renderTable();
+        renderUsers();
+      }
     });
 
     window.saveToFirebase = function() {
       set(ref(db, 'journal'), {
+        students: students,
         dates: dates,
         attendanceData: attendanceData,
         users: users
-      }).then(() => {
-        alert("Изменения сохранены в защищенную базу данных!");
       }).catch((error) => {
         alert("Ошибка сохранения: " + error.message);
       });
     }
 
+    // Кнопка на случай, если база абсолютно пустая — создаст аккаунт admin / 1234
+    window.initFirstAdmin = function() {
+      users = [{ login: "admin", pass: "1234", role: "Кл. руководитель" }];
+      saveToFirebase();
+      alert("Создан первый аккаунт! Логин: admin, Пароль: 1234");
+    }
+
+    window.tryLogin = function() {
+      const login = document.getElementById("loginInput").value.trim();
+      const pass = document.getElementById("passInput").value.trim();
+
+      const found = users.find(u => u.login === login && u.pass === pass);
+      if (found) {
+        currentUser = found;
+        document.getElementById("authScreen").style.display = "none";
+        document.getElementById("appContent").style.display = "block";
+        
+        if (found.role === "Кл. руководитель" || found.role === "Староста" || found.role === "Зам. старосты") {
+          document.getElementById("tabAdminBtn").style.display = "block";
+        }
+
+        renderTable();
+        renderUsers();
+      } else {
+        alert("Неверный логин или пароль! (Если база пуста, нажмите зеленую кнопку ниже)");
+      }
+    }
+
+    window.logout = function() {
+      currentUser = null;
+      document.getElementById("authScreen").style.display = "block";
+      document.getElementById("appContent").style.display = "none";
+      document.getElementById("loginInput").value = "";
+      document.getElementById("passInput").value = "";
+    }
+
     window.renderTable = function() {
       const headerRow = document.getElementById("headerRow");
+      if (!headerRow) return;
       headerRow.innerHTML = '<th>№</th><th style="text-align: left;">Ф.И.О. обучающегося</th>';
       
       dates.forEach(date => {
@@ -167,20 +202,21 @@
       });
 
       const tbody = document.getElementById("studentRows");
+      if (!tbody) return;
       tbody.innerHTML = "";
 
-      students.forEach((student) => {
+      students.forEach((student, index) => {
         const tr = document.createElement("tr");
         if (student.name === "Я") tr.classList.add("me-row");
 
-        tr.innerHTML = `<td>${student.id}</td><td class="student-name">${student.name}</td>`;
+        tr.innerHTML = `<td>${index + 1}</td><td class="student-name">${student.name}</td>`;
 
         dates.forEach(date => {
           const td = document.createElement("td");
-          const currentValue = (attendanceData[date] && attendanceData[date][student.id]) || "";
+          const currentValue = (attendanceData[date] && attendanceData[date][index]) || "";
           
           td.innerHTML = `
-            <select onchange="updateAttendance('${date}', ${student.id}, this.value)">
+            <select onchange="updateAttendance('${date}', ${index}, this.value)">
               <option value="" ${currentValue === '' ? 'selected' : ''}>—</option>
               <option value="П" ${currentValue === 'П' ? 'selected' : ''}>П (Был)</option>
               <option value="Н" ${currentValue === 'Н' ? 'selected' : ''}>Н (Н/Б)</option>
@@ -192,6 +228,15 @@
 
         tbody.appendChild(tr);
       });
+    }
+
+    window.addStudent = function() {
+      const nameInput = document.getElementById("newStudentName");
+      const name = nameInput.value.trim();
+      if (!name) return alert("Введите ФИО ученика!");
+      students.push({ name });
+      saveToFirebase();
+      nameInput.value = "";
     }
 
     window.addDateColumn = function() {
@@ -209,9 +254,9 @@
       }
     }
 
-    window.updateAttendance = function(date, studentId, value) {
+    window.updateAttendance = function(date, studentIndex, value) {
       if (!attendanceData[date]) attendanceData[date] = {};
-      attendanceData[date][studentId] = value;
+      attendanceData[date][studentIndex] = value;
       saveToFirebase();
     }
 
@@ -220,7 +265,8 @@
       document.getElementById("adminSection").style.display = tab === 'admin' ? 'block' : 'none';
       
       document.getElementById("tabJournalBtn").classList.toggle("active", tab === 'journal');
-      document.getElementById("tabAdminBtn").classList.toggle("active", tab === 'admin');
+      const adminBtn = document.getElementById("tabAdminBtn");
+      if(adminBtn) adminBtn.classList.toggle("active", tab === 'admin');
     }
 
     window.addUser = function() {
@@ -241,6 +287,7 @@
       saveToFirebase();
       document.getElementById("usernameInput").value = "";
       document.getElementById("passwordInput").value = "";
+      alert("Пользователь успешно сохранен в базе данных!");
     }
 
     window.renderUsers = function() {
@@ -251,7 +298,6 @@
         tbody.innerHTML += `
           <tr>
             <td>${u.login}</td>
-            <td>${u.pass}</td>
             <td><b>${u.role}</b></td>
             <td><button onclick="removeUser('${u.login}')" style="background:#ef4444; padding: 4px 8px;">Удалить</button></td>
           </tr>
