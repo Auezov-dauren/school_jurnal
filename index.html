@@ -17,7 +17,7 @@
     .me-row td { color: #0369a1; }
     button { cursor: pointer; padding: 8px 14px; border: none; border-radius: 6px; background: #2563eb; color: white; font-weight: 500; transition: 0.2s; }
     button:hover { background: #1d4ed8; }
-    input, select { padding: 7px 10px; margin: 5px 0; border: 1px solid #cbd5e1; border-radius: 6px; }
+    input, select { padding: 7px 10px; margin: 5px 0; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; box-sizing: border-box; }
     .flex-gap { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
     .nav-tabs { display: flex; gap: 10px; margin-bottom: 15px; }
     .nav-tabs button { background: #64748b; }
@@ -26,15 +26,14 @@
 </head>
 <body>
 
-  <!-- Экран входа -->
-  <div id="authScreen" class="card" style="max-width: 400px; margin: 100px auto; text-align: center;">
+  <!-- Экран входа (кнопка создания удалена) -->
+  <div id="authScreen" class="card" style="max-width: 350px; margin: 100px auto; text-align: center;">
     <h2>🔐 Вход в журнал</h2>
-    <p style="color: #64748b;">Введите данные для входа</p>
+    <p style="color: #64748b; font-size: 14px;">Введите ваши данные</p>
     <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
       <input type="text" id="loginInput" placeholder="Логин">
       <input type="password" id="passInput" placeholder="Пароль">
-      <button onclick="tryLogin()" style="background: #2563eb; margin-top: 10px;">Войти</button>
-      <button onclick="initFirstAdmin()" style="background: #16a34a; font-size: 13px; margin-top: 5px;">⚠️ Инициализировать базу (если пусто)</button>
+      <button onclick="tryLogin()" style="background: #2563eb; margin-top: 10px; width: 100%;">Войти</button>
     </div>
   </div>
 
@@ -50,7 +49,7 @@
     <div id="journalSection" class="card">
       <h2>Журнал посещаемости</h2>
       <div class="flex-gap" style="margin-bottom: 15px;">
-        <input type="text" id="newDateInput" placeholder="Введите дату (напр. 22.10.2026)">
+        <input type="text" id="newDateInput" placeholder="Введите дату (напр. 22.10.2026)" style="width: auto;">
         <button onclick="addDateColumn()">+ Добавить дату</button>
       </div>
 
@@ -73,11 +72,11 @@
       
       <h3>Добавить ученика</h3>
       <div style="max-width: 320px; display: flex; flex-direction: column; margin-bottom: 20px;">
-        <input type="text" id="newStudentName" placeholder="ФИО (или «Я»)">
-        <button onclick="addStudent()" style="background: #2563eb; margin-top: 5px;">Добавить ученика в базу</button>
+        <input type="text" id="newStudentName" placeholder="ФИО (или «Я»)кар">
+        <button onclick="addStudent()" style="background: #2563eb; margin-top: 5px;">Добавить ученика</button>
       </div>
 
-      <h3>Создать пользователя</h3>
+      <h3>Создать / Изменить пользователя</h3>
       <div style="max-width: 320px; display: flex; flex-direction: column;">
         <input type="text" id="usernameInput" placeholder="Логин">
         <input type="password" id="passwordInput" placeholder="Пароль">
@@ -86,7 +85,7 @@
           <option value="Зам. старосты">Зам. старосты</option>
           <option value="Кл. руководитель">Классный руководитель</option>
         </select>
-        <button onclick="addUser()" style="margin-top: 10px; background: #9333ea;">Создать аккаунт</button>
+        <button onclick="addUser()" style="margin-top: 10px; background: #9333ea;">Сохранить аккаунт</button>
       </div>
 
       <h3 style="margin-top: 30px;">Список пользователей</h3>
@@ -123,9 +122,7 @@
     const db = getDatabase(app);
 
     let globalData = { students: [], dates: [], attendanceData: {}, users: [] };
-    let currentUser = null;
 
-    // Функция загрузки данных из Firebase по запросу
     async function loadData() {
       const snapshot = await get(child(ref(db), 'journal'));
       if (snapshot.exists()) {
@@ -137,21 +134,8 @@
       }
     }
 
-    // Сохранение данных в Firebase
     async function saveData() {
       await set(ref(db, 'journal'), globalData);
-    }
-
-    // Кнопка для создания первоначального админа, если база пуста
-    window.initFirstAdmin = async function() {
-      await loadData();
-      if (globalData.users.length === 0) {
-        globalData.users.push({ login: "admin", pass: "1234", role: "Кл. руководитель" });
-        await saveData();
-        alert("База инициализирована! Создан аккаунт: Логин: admin, Пароль: 1234");
-      } else {
-        alert("В базе уже есть пользователи!");
-      }
     }
 
     window.tryLogin = async function() {
@@ -162,30 +146,35 @@
 
       const found = globalData.users.find(u => u.login === login && u.pass === pass);
       if (found) {
-        currentUser = found;
-        document.getElementById("authScreen").style.display = "none";
-        document.getElementById("appContent").style.display = "block";
-        
-        if (["Кл. руководитель", "Староста", "Зам. старосты"].includes(found.role)) {
-          document.getElementById("tabAdminBtn").style.display = "block";
-        }
-
-        renderTable();
-        renderUsers();
+        localStorage.setItem("school_logged_user", JSON.stringify(found));
+        openApp(found);
       } else {
         alert("Неверный логин или пароль!");
       }
     }
 
+    function openApp(user) {
+      document.getElementById("authScreen").style.display = "none";
+      document.getElementById("appContent").style.display = "block";
+      
+      if (["Кл. руководитель", "Староста", "Зам. старосты"].includes(user.role)) {
+        document.getElementById("tabAdminBtn").style.display = "block";
+      }
+
+      renderTable();
+      renderUsers();
+    }
+
     window.logout = function() {
-      currentUser = null;
+      localStorage.removeItem("school_logged_user");
       document.getElementById("authScreen").style.display = "block";
       document.getElementById("appContent").style.display = "none";
       document.getElementById("loginInput").value = "";
       document.getElementById("passInput").value = "";
     }
 
-    window.renderTable = function() {
+    window.renderTable = async function() {
+      await loadData();
       const headerRow = document.getElementById("headerRow");
       if (!headerRow) return;
       headerRow.innerHTML = '<th>№</th><th style="text-align: left;">Ф.И.О. обучающегося</th>';
@@ -235,7 +224,7 @@
       await saveData();
       nameInput.value = "";
       renderTable();
-      alert("Ученик добавлен!");
+      alert("Ученик успешно добавлен!");
     }
 
     window.addDateColumn = async function() {
@@ -268,6 +257,7 @@
       document.getElementById("tabJournalBtn").classList.toggle("active", tab === 'journal');
       const adminBtn = document.getElementById("tabAdminBtn");
       if(adminBtn) adminBtn.classList.toggle("active", tab === 'admin');
+      if(tab === 'admin') renderUsers();
     }
 
     window.addUser = async function() {
@@ -293,7 +283,8 @@
       alert("Пользователь сохранен!");
     }
 
-    window.renderUsers = function() {
+    window.renderUsers = async function() {
+      await loadData();
       const tbody = document.getElementById("usersListTable");
       if (!tbody) return;
       tbody.innerHTML = "";
@@ -313,6 +304,14 @@
       globalData.users = globalData.users.filter(u => u.login !== login);
       await saveData();
       renderUsers();
+    }
+
+    window.onload = async function() {
+      const savedUser = localStorage.getItem("school_logged_user");
+      if (savedUser) {
+        await loadData();
+        openApp(JSON.parse(savedUser));
+      }
     }
   </script>
 </body>
